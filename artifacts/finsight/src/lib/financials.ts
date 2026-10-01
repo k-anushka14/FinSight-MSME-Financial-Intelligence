@@ -7,12 +7,12 @@ import type {
 } from "@workspace/api-client-react";
 
 export const categoryColors = [
-  "#317f6c",
-  "#de9b42",
-  "#5a91a8",
-  "#b87363",
-  "#8272a5",
-  "#6d8f45",
+  "#7c5cff",
+  "#22d3ee",
+  "#34d399",
+  "#fb7185",
+  "#fbbf24",
+  "#a78bfa",
 ];
 
 export const inr = (n: number) =>

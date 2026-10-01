@@ -37,6 +37,9 @@
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
   --color-accent-border: var(--accent-border);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
 
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
@@ -363,5 +366,212 @@
   .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
+  }
+}
+
+:root {
+  --finsight-bg: #0b0b14;
+  --finsight-surface: rgba(255, 255, 255, 0.04);
+  --finsight-surface-hover: rgba(255, 255, 255, 0.08);
+  --finsight-border: rgba(255, 255, 255, 0.08);
+  --finsight-text: #eceaff;
+  --finsight-muted: #8b89a8;
+  --finsight-primary: #7c5cff;
+  --finsight-accent: #22d3ee;
+  --finsight-glow: 0 0 40px -10px rgba(124, 92, 255, 0.55);
+}
+
+body {
+  background:
+    radial-gradient(60rem 40rem at 10% -10%, rgba(124, 92, 255, 0.18), transparent 60%),
+    radial-gradient(50rem 35rem at 100% 0%, rgba(34, 211, 238, 0.12), transparent 60%),
+    var(--finsight-bg);
+  color: var(--finsight-text);
+}
+
+.glass-card {
+  background: var(--finsight-surface);
+  border: 1px solid var(--finsight-border);
+  border-radius: 16px;
+  backdrop-filter: blur(14px);
+  transition: transform .25s ease, box-shadow .25s ease, background .25s ease, border-color .25s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  background: var(--finsight-surface-hover);
+  border-color: rgba(124, 92, 255, 0.5);
+  box-shadow: var(--finsight-glow);
+}
+
+.btn-glow {
+  background: linear-gradient(135deg, var(--finsight-primary), var(--finsight-accent));
+  color: #fff;
+  border-radius: 12px;
+  padding: .6rem 1.1rem;
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+
+.btn-glow:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: var(--finsight-glow);
+  filter: brightness(1.1);
+}
+
+.btn-glow:active {
+  transform: scale(.97);
+}
+
+.nav-link {
+  position: relative;
+  color: var(--finsight-muted);
+  transition: color .2s;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: var(--finsight-text);
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, var(--finsight-primary), var(--finsight-accent));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .25s ease;
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+  transform: scaleX(1);
+}
+
+.table-row {
+  transition: background .2s ease, transform .2s ease;
+}
+
+.table-row:hover {
+  background: var(--finsight-surface-hover);
+  transform: translateX(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  .glass-card,
+  .btn-glow,
+  .nav-link,
+  .nav-link::after,
+  .table-row {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* FinSight dark visual system mapped onto the existing shadcn tokens. */
+:root {
+  --bg: #0b0b14;
+  --surface: rgba(255, 255, 255, 0.04);
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --border-visual: rgba(255, 255, 255, 0.08);
+  --text: #eceaff;
+  --muted-visual: #8b89a8;
+  --primary-visual: #7c5cff;
+  --accent-visual: #22d3ee;
+  --positive: #34d399;
+  --negative: #fb7185;
+  --warning: #fbbf24;
+  --glow: 0 0 40px -10px rgba(124, 92, 255, 0.55);
+
+  --background: 240 29% 6%;
+  --foreground: 245 45% 95%;
+  --border: 240 18% 20%;
+  --card: 240 20% 10%;
+  --card-foreground: 245 45% 95%;
+  --card-border: 240 18% 20%;
+  --popover: 240 20% 10%;
+  --popover-foreground: 245 45% 95%;
+  --popover-border: 240 18% 20%;
+  --primary: 251 100% 68%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 18% 16%;
+  --secondary-foreground: 245 45% 95%;
+  --muted: 240 18% 16%;
+  --muted-foreground: 245 18% 60%;
+  --accent: 188 86% 53%;
+  --accent-foreground: 240 29% 6%;
+  --destructive: 350 90% 70%;
+  --destructive-foreground: 240 29% 6%;
+  --input: 240 18% 22%;
+  --ring: 251 100% 68%;
+  --sidebar: 240 29% 8%;
+  --sidebar-foreground: 245 45% 95%;
+  --sidebar-border: 240 18% 18%;
+  --sidebar-primary: 251 100% 68%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 18% 14%;
+  --sidebar-accent-foreground: 245 45% 95%;
+  --sidebar-ring: 251 100% 68%;
+  --chart-1: 251 100% 68%;
+  --chart-2: 188 86% 53%;
+  --chart-3: 153 61% 52%;
+  --chart-4: 350 90% 70%;
+  --chart-5: 45 96% 56%;
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --primary-border: hsl(var(--primary));
+  --secondary-border: hsl(var(--secondary));
+  --muted-border: hsl(var(--muted));
+  --accent-border: hsl(var(--accent));
+  --destructive-border: hsl(var(--destructive));
+}
+
+body {
+  background:
+    radial-gradient(60rem 40rem at 10% -10%, rgba(124, 92, 255, 0.18), transparent 60%),
+    radial-gradient(50rem 35rem at 100% 0%, rgba(34, 211, 238, 0.12), transparent 60%),
+    var(--bg);
+  color: var(--text);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  outline: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.35);
+}
+
+button:not(:disabled),
+a {
+  transition: transform .2s ease, color .2s ease, background-color .2s ease;
+}
+
+button:not(:disabled):hover,
+a:hover {
+  transform: translateY(-1px);
+}
+
+.chart-grid {
+  stroke: rgba(255, 255, 255, 0.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled):hover,
+  a:hover {
+    transform: none !important;
   }
 }
