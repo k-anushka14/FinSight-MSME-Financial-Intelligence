@@ -71,6 +71,8 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Moon,
+  Sun,
   Target,
   TrendingDown,
   TrendingUp,
@@ -152,13 +154,59 @@ const clerkPubKey = publishableKeyFromHost(
 );
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 
+type ThemeMode = "dark" | "light";
+const THEME_STORAGE_KEY = "finsight_theme";
+
+const ThemeContext = createContext<{
+  theme: ThemeMode;
+  toggleTheme: () => void;
+}>({
+  theme: "dark",
+  toggleTheme: () => undefined,
+});
+
+function getInitialTheme(): ThemeMode {
+  const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
+  if (saved === "light" || saved === "dark") return saved;
+  return window.matchMedia("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark";
+}
+
+function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("light", theme === "light");
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
+
+  const value = useMemo(
+    () => ({
+      theme,
+      toggleTheme: () => setTheme((current) => (current === "dark" ? "light" : "dark")),
+    }),
+    [theme],
+  );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
+function useThemeMode() {
+  return useContext(ThemeContext);
+}
+
 function stripBase(path: string) {
   return basePath && path.startsWith(basePath)
     ? path.slice(basePath.length) || "/"
     : path;
 }
 
-const clerkAppearance = {
+function getClerkAppearance(theme: ThemeMode) {
+  const isLight = theme === "light";
+  return {
   theme: shadcn,
   cssLayerName: "clerk",
   options: {
@@ -168,44 +216,45 @@ const clerkAppearance = {
   },
   variables: {
     colorPrimary: "#7c5cff",
-    colorForeground: "#eceaff",
-    colorMutedForeground: "#8b89a8",
+    colorForeground: isLight ? "#1f2340" : "#eceaff",
+    colorMutedForeground: isLight ? "#5e6380" : "#8b89a8",
     colorDanger: "#fb7185",
-    colorBackground: "#14142b",
-    colorInput: "#1c1c3a",
-    colorInputForeground: "#eceaff",
-    colorNeutral: "#eceaff",
+    colorBackground: isLight ? "#ffffff" : "#14142b",
+    colorInput: isLight ? "#f5f3ff" : "#1c1c3a",
+    colorInputForeground: isLight ? "#1f2340" : "#eceaff",
+    colorNeutral: isLight ? "#1f2340" : "#eceaff",
     fontFamily: "DM Sans, sans-serif",
     borderRadius: "0.8rem",
   },
   elements: {
     rootBox: "w-full flex justify-center",
-    cardBox: "rounded-2xl border border-white/10 bg-[#14142b] shadow-[0_0_40px_-10px_rgba(124,92,255,0.55)] w-[440px] max-w-full overflow-hidden",
+    cardBox: `rounded-2xl border ${isLight ? "border-[#dedcf0] bg-white" : "border-white/10 bg-[#14142b]"} shadow-[0_0_40px_-10px_rgba(124,92,255,0.55)] w-[440px] max-w-full overflow-hidden`,
     card: "!border-0 !bg-transparent !rounded-none",
     footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
-    headerTitle: "text-[#eceaff]",
-    headerSubtitle: "text-[#8b89a8]",
-    socialButtonsBlockButtonText: "text-[#eceaff]",
-    formFieldLabel: "text-[#eceaff]",
+    headerTitle: isLight ? "text-[#1f2340]" : "text-[#eceaff]",
+    headerSubtitle: isLight ? "text-[#5e6380]" : "text-[#8b89a8]",
+    socialButtonsBlockButtonText: isLight ? "text-[#1f2340]" : "text-[#eceaff]",
+    formFieldLabel: isLight ? "text-[#1f2340]" : "text-[#eceaff]",
     footerActionLink: "text-[#22d3ee]",
-    footerActionText: "text-[#8b89a8]",
-    dividerText: "text-[#8b89a8]",
+    footerActionText: isLight ? "text-[#5e6380]" : "text-[#8b89a8]",
+    dividerText: isLight ? "text-[#5e6380]" : "text-[#8b89a8]",
     identityPreviewEditButton: "text-[#22d3ee]",
     formFieldSuccessText: "text-[#34d399]",
     alertText: "text-[#fb7185]",
     logoBox: "h-12",
     logoImage: "h-10 w-10",
-    socialButtonsBlockButton: "border-white/10 bg-[#14142b]",
+    socialButtonsBlockButton: isLight ? "border-[#dedcf0] bg-white" : "border-white/10 bg-[#14142b]",
     formButtonPrimary: "bg-gradient-to-r from-[#7c5cff] to-[#22d3ee] text-white hover:brightness-110",
-    formFieldInput: "border-white/10 bg-[#1c1c3a] text-[#eceaff]",
+    formFieldInput: isLight ? "border-[#dedcf0] bg-[#f5f3ff] text-[#1f2340]" : "border-white/10 bg-[#1c1c3a] text-[#eceaff]",
     footerAction: "bg-transparent",
     dividerLine: "bg-white/10",
     alert: "border-[#fb7185]/40 bg-[#fb7185]/10",
-    otpCodeFieldInput: "border-white/10 bg-[#1c1c3a] text-[#eceaff]",
-    formFieldRow: "text-[#eceaff]",
+    otpCodeFieldInput: isLight ? "border-[#dedcf0] bg-[#f5f3ff] text-[#1f2340]" : "border-white/10 bg-[#1c1c3a] text-[#eceaff]",
+    formFieldRow: isLight ? "text-[#1f2340]" : "text-[#eceaff]",
     main: "bg-transparent",
   },
-};
+  };
+}
 
 type IconType = typeof LayoutDashboard;
 type NavItem = { href: string; label: string; icon: IconType };
@@ -522,7 +571,7 @@ function ChartTip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-white/10 bg-[#14142b]/95 p-3 shadow-[0_0_40px_-10px_rgba(124,92,255,0.55)] backdrop-blur-md">
+    <div className="chart-tooltip rounded-xl border p-3 shadow-[0_0_40px_-10px_rgba(124,92,255,0.55)] backdrop-blur-md">
       <div className="mb-1 text-[10px] text-muted-foreground">{label}</div>
       {payload.map((p) => (
         <div
@@ -958,6 +1007,7 @@ function Shell({ children }: { children: ReactNode }) {
   const { user } = useUser();
   const { signOut } = useClerk();
   const { lang } = useLanguage();
+  const { theme, toggleTheme } = useThemeMode();
   const data = useBusinessData();
   const currentLabel =
     navGroups.flatMap((g) => g.items).find((i) => i.href === location)?.label ??
@@ -1086,6 +1136,15 @@ function Shell({ children }: { children: ReactNode }) {
             <div className="hidden lg:block">
               <LanguageSwitcher />
             </div>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              className="grid size-9 place-items-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
             <div className="relative hidden w-[250px] md:block">
               <Search
                 size={15}
@@ -1269,18 +1328,18 @@ function Dashboard() {
             <div className="h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={f.monthly}>
-                  <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
                   <XAxis
                     dataKey="month"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 11, fill: "#8b89a8" }}
+                    tick={{ fontSize: 11, fill: "var(--chart-axis)" }}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(v) => `₹${Number(v) / 100000}L`}
-                    tick={{ fontSize: 10, fill: "#8b89a8" }}
+                    tick={{ fontSize: 10, fill: "var(--chart-axis)" }}
                   />
                   <ReTooltip content={<ChartTip />} />
                   <Area
@@ -1290,8 +1349,8 @@ function Dashboard() {
                     type="monotone"
                     dataKey="revenue"
                     name="Revenue"
-                    stroke="#7c5cff"
-                    fill="#7c5cff"
+                    stroke="var(--chart-primary)"
+                    fill="var(--chart-primary)"
                     fillOpacity=".12"
                     strokeWidth={2.5}
                   />
@@ -1302,8 +1361,8 @@ function Dashboard() {
                     type="monotone"
                     dataKey="expenses"
                     name="Expenses"
-                    stroke="#22d3ee"
-                    fill="#22d3ee"
+                    stroke="var(--chart-accent)"
+                    fill="var(--chart-accent)"
                     fillOpacity=".1"
                     strokeWidth={2}
                   />
@@ -1460,12 +1519,12 @@ function Dashboard() {
               <div className="h-[205px]">
                 <ResponsiveContainer>
                   <LineChart data={f.forecast}>
-                    <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" />
+                    <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
                     <XAxis
                       dataKey="label"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 11, fill: "#8b89a8" }}
+                      tick={{ fontSize: 11, fill: "var(--chart-axis)" }}
                     />
                     <YAxis hide />
                     <ReTooltip content={<ChartTip />} />
@@ -1475,13 +1534,13 @@ function Dashboard() {
                     animationEasing="ease-out"
                       dataKey="balance"
                       name="Cash balance"
-                      stroke="#22d3ee"
+                      stroke="var(--chart-accent)"
                       strokeWidth={3}
                       dot={{
-                        fill: "#22d3ee",
+                        fill: "var(--chart-accent)",
                         r: 4,
                         strokeWidth: 2,
-                        stroke: "#14142b",
+                        stroke: "var(--chart-tooltip-bg)",
                       }}
                     />
                   </LineChart>
@@ -2333,18 +2392,18 @@ function RevenuePage() {
           <div className="h-[300px]">
             <ResponsiveContainer>
               <BarChart data={f.monthly}>
-                <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" />
+                <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
                 <XAxis
                   dataKey="month"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 11, fill: "#8b89a8" }}
+                  tick={{ fontSize: 11, fill: "var(--chart-axis)" }}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(v) => `₹${Number(v) / 100000}L`}
-                  tick={{ fontSize: 10, fill: "#8b89a8" }}
+                  tick={{ fontSize: 10, fill: "var(--chart-axis)" }}
                 />
                 <ReTooltip content={<ChartTip />} />
                 <Bar
@@ -2353,7 +2412,7 @@ function RevenuePage() {
                     animationEasing="ease-out"
                   dataKey="revenue"
                   name="Revenue"
-                  fill="#7c5cff"
+                  fill="var(--chart-primary)"
                   radius={[5, 5, 0, 0]}
                 />
               </BarChart>
@@ -2796,18 +2855,18 @@ function AnalyticsPage() {
               <div className="h-[280px]">
                 <ResponsiveContainer>
                   <LineChart data={f.monthly}>
-                    <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" />
+                    <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
                     <XAxis
                       dataKey="month"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 10, fill: "#8b89a8" }}
+                      tick={{ fontSize: 10, fill: "var(--chart-axis)" }}
                     />
                     <YAxis
                       axisLine={false}
                       tickLine={false}
                       tickFormatter={(v) => `₹${Number(v) / 100000}L`}
-                      tick={{ fontSize: 10, fill: "#8b89a8" }}
+                      tick={{ fontSize: 10, fill: "var(--chart-axis)" }}
                     />
                     <ReTooltip content={<ChartTip />} />
                     <Line
@@ -2816,7 +2875,7 @@ function AnalyticsPage() {
                     animationEasing="ease-out"
                       dataKey="expenses"
                       name="Total expenses"
-                      stroke="#22d3ee"
+                      stroke="var(--chart-accent)"
                       strokeWidth={3}
                       dot={false}
                     />
@@ -2960,22 +3019,22 @@ function ForecastPage() {
                 <AreaChart data={f.forecast}>
                   <defs>
                     <linearGradient id="balFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stopColor="#22d3ee" stopOpacity=".22" />
-                      <stop offset="1" stopColor="#22d3ee" stopOpacity="0" />
+                      <stop offset="0" stopColor="var(--chart-accent)" stopOpacity=".22" />
+                      <stop offset="1" stopColor="var(--chart-accent)" stopOpacity="0" />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
                   <XAxis
                     dataKey="label"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 11, fill: "#8b89a8" }}
+                    tick={{ fontSize: 11, fill: "var(--chart-axis)" }}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(v) => `₹${Number(v) / 100000}L`}
-                    tick={{ fontSize: 10, fill: "#8b89a8" }}
+                    tick={{ fontSize: 10, fill: "var(--chart-axis)" }}
                   />
                   <ReTooltip content={<ChartTip />} />
                   <Area
@@ -2984,7 +3043,7 @@ function ForecastPage() {
                     animationEasing="ease-out"
                     dataKey="balance"
                     name="Closing cash"
-                    stroke="#22d3ee"
+                    stroke="var(--chart-accent)"
                     fill="url(#balFill)"
                     strokeWidth={3}
                   />
@@ -2994,7 +3053,7 @@ function ForecastPage() {
                     animationEasing="ease-out"
                     dataKey="inflow"
                     name="Cash inflow"
-                    stroke="#22d3ee"
+                    stroke="var(--chart-accent)"
                     strokeDasharray="4 4"
                     strokeWidth={2}
                   />
@@ -4411,11 +4470,12 @@ function ApiAuthBridge() {
 }
 function ClerkApp() {
   const [, setLocation] = useLocation();
+  const { theme } = useThemeMode();
   return (
     <ClerkProvider
       publishableKey={clerkPubKey}
       proxyUrl={clerkProxyUrl}
-      appearance={clerkAppearance}
+      appearance={getClerkAppearance(theme)}
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
       routerPush={(to) => setLocation(stripBase(to))}
@@ -4428,17 +4488,19 @@ function ClerkApp() {
 }
 function App() {
   return (
-    <LanguageProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={basePath}>
-            <ClerkApp />
-          </WouterRouter>
-        <Toaster />
-        <SonnerToaster position="top-right" richColors />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <WouterRouter base={basePath}>
+              <ClerkApp />
+            </WouterRouter>
+            <Toaster />
+            <SonnerToaster position="top-right" richColors />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
 export default App;

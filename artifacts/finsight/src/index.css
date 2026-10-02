@@ -529,6 +529,12 @@ body {
   --muted-border: hsl(var(--muted));
   --accent-border: hsl(var(--accent));
   --destructive-border: hsl(var(--destructive));
+  --chart-grid: rgba(255, 255, 255, 0.06);
+  --chart-axis: #8b89a8;
+  --chart-primary: #7c5cff;
+  --chart-accent: #22d3ee;
+  --chart-tooltip-bg: #14142b;
+  --chart-tooltip-border: rgba(255, 255, 255, 0.1);
 }
 
 body {
@@ -574,4 +580,79 @@ a:hover {
   a:hover {
     transform: none !important;
   }
+}
+
+.light {
+  --bg: #f5f4fb;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-hover: rgba(255, 255, 255, 0.98);
+  --border-visual: rgba(45, 39, 91, 0.12);
+  --text: #1f2340;
+  --muted-visual: #626782;
+  --primary-visual: #6952d9;
+  --accent-visual: #079fba;
+  --glow: 0 0 34px -12px rgba(105, 82, 217, 0.35);
+
+  --background: 248 36% 97%;
+  --foreground: 235 34% 18%;
+  --border: 240 24% 87%;
+  --card: 0 0% 100%;
+  --card-foreground: 235 34% 18%;
+  --card-border: 240 24% 87%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 235 34% 18%;
+  --popover-border: 240 24% 87%;
+  --primary: 250 63% 58%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 247 33% 94%;
+  --secondary-foreground: 235 34% 18%;
+  --muted: 245 28% 94%;
+  --muted-foreground: 232 18% 43%;
+  --accent: 188 93% 38%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 350 74% 54%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 240 24% 83%;
+  --ring: 250 63% 58%;
+  --sidebar: 250 40% 98%;
+  --sidebar-foreground: 235 34% 18%;
+  --sidebar-border: 240 24% 87%;
+  --sidebar-primary: 250 63% 58%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 247 33% 94%;
+  --sidebar-accent-foreground: 235 34% 18%;
+  --sidebar-ring: 250 63% 58%;
+  --chart-1: 250 63% 58%;
+  --chart-2: 188 93% 38%;
+  --chart-3: 153 61% 38%;
+  --chart-4: 350 74% 54%;
+  --chart-5: 37 86% 45%;
+  --positive: #159e68;
+  --negative: #df5269;
+  --warning: #b87908;
+  --chart-grid: rgba(45, 39, 91, 0.1);
+  --chart-axis: #626782;
+  --chart-primary: #6952d9;
+  --chart-accent: #079fba;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: rgba(45, 39, 91, 0.12);
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --primary-border: hsl(var(--primary));
+  --secondary-border: hsl(var(--secondary));
+  --muted-border: hsl(var(--muted));
+  --accent-border: hsl(var(--accent));
+  --destructive-border: hsl(var(--destructive));
+}
+
+.light body {
+  background:
+    radial-gradient(60rem 40rem at 10% -10%, rgba(105, 82, 217, 0.1), transparent 60%),
+    radial-gradient(50rem 35rem at 100% 0%, rgba(7, 159, 186, 0.08), transparent 60%),
+    var(--bg);
+}
+
+.chart-tooltip {
+  border-color: var(--chart-tooltip-border);
+  background: color-mix(in srgb, var(--chart-tooltip-bg) 95%, transparent);
 }

@@ -14,13 +14,100 @@ import { requireAuth } from "../middlewares/requireAuth";
 const router: IRouter = Router();
 router.use(requireAuth);
 
+const PRIMARY_MODEL = "gemini-3.8-flash";
+const FALLBACK_MODEL = "gemini-3.5-flash-lite";
+
 type ConversationMessage = {
   role: "user" | "model";
   content: string;
 };
 
+type GeminiError = {
+  message?: unknown;
+  status?: unknown;
+  code?: unknown;
+};
+
+type GeminiErrorCategory =
+  | "temporary-availability"
+  | "model-unavailable"
+  | "rate-limit"
+  | "authentication"
+  | "invalid-request"
+  | "other";
+
 function numberValue(value: string | number) {
   return Number(value);
+}
+
+function getGeminiError(error: unknown): GeminiError | undefined {
+  return typeof error === "object" && error !== null
+    ? (error as GeminiError)
+    : undefined;
+}
+
+function getGeminiMessage(error: unknown) {
+  const details = getGeminiError(error);
+  return typeof details?.message === "string"
+    ? details.message.toUpperCase()
+    : "";
+}
+
+function getGeminiStatus(error: unknown) {
+  const details = getGeminiError(error);
+  return details?.status ?? details?.code;
+}
+
+function getGeminiErrorCategory(error: unknown): GeminiErrorCategory {
+  const status = getGeminiStatus(error);
+  const message = getGeminiMessage(error);
+  if (
+    status === 503 ||
+    status === "UNAVAILABLE" ||
+    message.includes("UNAVAILABLE") ||
+    message.includes("HIGH DEMAND")
+  ) {
+    return "temporary-availability";
+  }
+  if (
+    status === 404 ||
+    status === "NOT_FOUND" ||
+    message.includes("MODEL_NOT_FOUND") ||
+    message.includes("MODEL NOT FOUND") ||
+    message.includes("NOT_FOUND")
+  ) {
+    return "model-unavailable";
+  }
+  if (status === 429 || status === "RESOURCE_EXHAUSTED") {
+    return "rate-limit";
+  }
+  if (status === 401 || status === 403 || status === "UNAUTHENTICATED" || status === "PERMISSION_DENIED") {
+    return "authentication";
+  }
+  if (status === 400 || status === "INVALID_ARGUMENT") {
+    return "invalid-request";
+  }
+  return "other";
+}
+
+async function findSupportedFlashModel(
+  ai: GoogleGenAI,
+  excludedModels: Set<string>,
+) {
+  const models = await ai.models.list();
+  for await (const model of models) {
+    const modelName =
+      typeof model.name === "string" ? model.name.replace(/^models\//, "") : "";
+    if (
+      modelName &&
+      !excludedModels.has(modelName) &&
+      !modelName.includes("2.5") &&
+      /flash(?:-lite)?(?:-preview)?$/i.test(modelName)
+    ) {
+      return modelName;
+    }
+  }
+  return undefined;
 }
 
 async function buildBusinessContext(userId: string) {
@@ -148,6 +235,8 @@ router.post("/copilot", async (req, res) => {
         .slice(-10)
     : [];
   let context: Awaited<ReturnType<typeof buildBusinessContext>>;
+  let activeModel = PRIMARY_MODEL;
+  let fallbackUsed = false;
   try {
     context = await buildBusinessContext(res.locals.userId as string);
   } catch (error) {
@@ -180,13 +269,60 @@ ${message}`;
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const result = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
-      contents: prompt,
-      config: {
-        maxOutputTokens: 500,
-      },
-    });
+    const generate = (model: string) =>
+      ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          maxOutputTokens: 500,
+        },
+      });
+
+    let result;
+    let lastError: unknown;
+    const attemptedModels = new Set<string>();
+
+    const attemptModel = async (model: string) => {
+      attemptedModels.add(model);
+      activeModel = model;
+      try {
+        return await generate(model);
+      } catch (error) {
+        lastError = error;
+        console.error("Copilot model attempt failed", {
+          model,
+          status: getGeminiStatus(error),
+          category: getGeminiErrorCategory(error),
+          fallbackUsed,
+        });
+      }
+      return undefined;
+    };
+
+    result = await attemptModel(PRIMARY_MODEL);
+    const primaryCategory = getGeminiErrorCategory(lastError);
+    if (
+      !result &&
+      (primaryCategory === "temporary-availability" ||
+        primaryCategory === "model-unavailable" ||
+        primaryCategory === "rate-limit")
+    ) {
+      fallbackUsed = true;
+      result = await attemptModel(FALLBACK_MODEL);
+    }
+
+    if (!result && getGeminiErrorCategory(lastError) === "model-unavailable") {
+      const discoveredModel = await findSupportedFlashModel(ai, attemptedModels);
+      if (discoveredModel) {
+        fallbackUsed = true;
+        result = await attemptModel(discoveredModel);
+      }
+    }
+
+    if (!result) {
+      throw lastError;
+    }
+
     const answer = result.text?.trim();
     if (!answer) {
       res.status(502).json({ message: "Copilot returned an empty response." });
@@ -197,25 +333,27 @@ ${message}`;
       sources: ["Business workspace", "Transactions", "Receivables", "Payables"],
     });
   } catch (error) {
-    const errorDetails =
-      typeof error === "object" && error !== null
-        ? error as { message?: unknown; status?: unknown; code?: unknown }
-        : undefined;
+    const status = getGeminiStatus(error);
+    const category = getGeminiErrorCategory(error);
     console.error("Copilot request failed", {
-      message: error instanceof Error ? error.message : errorDetails?.message ?? String(error),
-      status: errorDetails?.status,
-      code: errorDetails?.code,
-      stack: error instanceof Error ? error.stack : undefined,
+      model: activeModel,
+      status,
+      category,
+      fallbackUsed,
     });
-    const status =
-      typeof error === "object" &&
-      error !== null &&
-      "status" in error &&
-      typeof error.status === "number"
-        ? error.status
-        : undefined;
-    if (status === 429) {
+    if (category === "rate-limit") {
       res.status(429).json({ message: "Copilot is busy. Please try again shortly." });
+      return;
+    }
+    if (
+      category === "temporary-availability" ||
+      category === "model-unavailable"
+    ) {
+      res.status(503).json({ message: "Copilot is temporarily unavailable. Please try again shortly." });
+      return;
+    }
+    if (category === "authentication") {
+      res.status(503).json({ message: "The Copilot service is not available for this configuration." });
       return;
     }
     res.status(502).json({ message: "Copilot is temporarily unavailable. Please try again." });
